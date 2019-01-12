@@ -1,0 +1,9 @@
+---
+production:
+  web:
+    db: prod-db1
+    cache: prod-cache1
+staging:
+  web:
+    db: stage-db1
+    cache: stage-cache1
