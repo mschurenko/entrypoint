@@ -5,6 +5,7 @@ version: 2
 jobs:
   build:
     environment:
+      VERSION: &version 0.1.0
       AWS_REGION: us-west-2
     docker:
       - image: golang:latest
@@ -16,4 +17,43 @@ jobs:
     working_directory: /go/src/github.com/mschurenko/entrypoint
     steps:
       - checkout
+      - run: mkdir ./workspace
       - run: go test -v .
+      - run: go install -race
+      - run: cp -v /go/bin/entrypoint ./workspace
+
+      - persist_to_workspace:
+          root: workspace
+          paths:
+            - entrypoint
+  test:
+    working_directory: /go/src/github.com/mschurenko/entrypoint
+    steps:
+      - run: ls -l ./workspace
+
+  # publish-github-release:
+  #   environment:
+  #     VERSION: *version
+  #   docker:
+  #     - image: *go_image
+  #   steps:
+  #     - attach_workspace:
+  #         at: ./artifacts
+  #     - run:
+  #         name: "publish github release"
+  #         command: |
+  #           go get github.com/tcnksm/ghr
+  #           ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -n ${VERSION} -soft ${VERSION} ./artifacts/
+
+
+workflows:
+  version: 2
+  main:
+    jobs:
+      - build
+      # - publish-github-release:
+      #     filters:
+      #       branches:
+      #         only: master
+      #     requires:
+      #       - build
