@@ -53,6 +53,9 @@ workflows:
   main:
     jobs:
       - build
+      - test:
+          requires:
+            - build
       # - publish-github-release:
       #     filters:
       #       branches:
