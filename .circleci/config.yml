@@ -34,19 +34,19 @@ jobs:
           at: ./artifacts
       - run: ls -l ./artifacts
 
-  # publish-github-release:
-  #   environment:
-  #     VERSION: *version
-  #   docker:
-  #     - image: *go_image
-  #   steps:
-  #     - attach_workspace:
-  #         at: ./artifacts
-  #     - run:
-  #         name: "publish github release"
-  #         command: |
-  #           go get github.com/tcnksm/ghr
-  #           ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -n ${VERSION} -soft ${VERSION} ./artifacts/
+  publish-github-release:
+    environment:
+      VERSION: *version
+    docker:
+      - image: *go_image
+    steps:
+      - attach_workspace:
+          at: ./artifacts
+      - run:
+          name: "publish github release"
+          command: |
+            go get github.com/tcnksm/ghr
+            ghr -t ${GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} -r ${CIRCLE_PROJECT_REPONAME} -c ${CIRCLE_SHA1} -n ${VERSION} -soft ${VERSION} ./artifacts/
 
 
 workflows:
@@ -57,9 +57,9 @@ workflows:
       - test:
           requires:
             - build
-      # - publish-github-release:
-      #     filters:
-      #       branches:
-      #         only: master
-      #     requires:
-      #       - build
+      - publish-github-release:
+          filters:
+            branches:
+              only: master
+          requires:
+            - test
