@@ -8,7 +8,7 @@ jobs:
       VERSION: &version 0.1.0
       AWS_REGION: us-west-2
     docker:
-      - image: golang:latest
+      - image: &image golang:latest
 
     #### TEMPLATE_NOTE: go expects specific checkout path representing url
     #### expecting it in the form of
@@ -27,6 +27,8 @@ jobs:
           paths:
             - entrypoint
   test:
+    docker:
+      - image: *image
     working_directory: /go/src/github.com/mschurenko/entrypoint
     steps:
       - run: ls -l ./workspace
