@@ -29,9 +29,10 @@ jobs:
   test:
     docker:
       - image: *image
-    working_directory: /go/src/github.com/mschurenko/entrypoint
     steps:
-      - run: ls -l ./workspace
+      - attach_workspace:
+          at: ./artifacts
+      - run: ls -l ./artifacts
 
   # publish-github-release:
   #   environment:
