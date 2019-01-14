@@ -181,7 +181,6 @@ func TestRenderTmpl(t *testing.T) {
 	MY_ENV is production
 	production web db is prod-db1
 	production web cache is prod-cache1
-	num of cpus is 4
 	value of /mschurenko/entrypoint/test_secret is mysecret
 	`
 
@@ -189,7 +188,6 @@ func TestRenderTmpl(t *testing.T) {
 	MY_ENV is {{ .EnvVars.MY_ENV }}
 	production web db is {{ (index .Vars .EnvVars.MY_ENV).web.db }}
 	production web cache is {{ (index .Vars .EnvVars.MY_ENV).web.cache }}
-	num of cpus is {{ getNumCPU }}
 	value of /mschurenko/entrypoint/test_secret is {{ getSecret "/mschurenko/entrypoint/test_secret" }}
 	`
 
