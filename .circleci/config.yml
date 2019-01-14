@@ -38,7 +38,7 @@ jobs:
     environment:
       VERSION: *version
     docker:
-      - image: *go_image
+      - image: *image
     steps:
       - attach_workspace:
           at: ./artifacts
