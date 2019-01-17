@@ -47,7 +47,10 @@ func main() {
 		log.Fatalf("required Env vars: %v are not set", requiredEnvVars)
 	}
 
-	vars := getVarsFromS3(os.Getenv("ENTRYPOINT_S3_PATH"))
+	vars := make(map[string]interface{})
+	if os.Getenv("ENTRYPOINT_S3_PATH") != "" {
+		vars = getVarsFromS3(os.Getenv("ENTRYPOINT_S3_PATH"))
+	}
 
 	var templates []string
 
@@ -55,8 +58,12 @@ func main() {
 	for k, v := range envVars {
 		matched, _ := regexp.Match(`^{{.*}}$`, []byte(v))
 		if matched {
-			// tmplCtx.EnvVars is empty in this context
-			rendered := renderStr(k, v, tmplCtx{Vars: vars})
+			var rendered string
+			if len(vars) > 0 {
+				rendered = renderStr(k, v, tmplCtx{Vars: vars})
+			} else {
+				rendered = renderStr(k, v, nil)
+			}
 			os.Setenv(k, rendered)
 		}
 		if k == "ENTRYPOINT_TEMPLATES" {
