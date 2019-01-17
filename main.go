@@ -33,20 +33,6 @@ func main() {
 		envVars[s[0]] = s[1]
 	}
 
-	// check for required env vars
-	var numMatched int
-	for i := range envVars {
-		for _, j := range requiredEnvVars {
-			if i == j {
-				numMatched++
-			}
-		}
-	}
-
-	if numMatched != len(requiredEnvVars) {
-		log.Fatalf("required Env vars: %v are not set", requiredEnvVars)
-	}
-
 	vars := make(map[string]interface{})
 	if os.Getenv("ENTRYPOINT_S3_PATH") != "" {
 		vars = getVarsFromS3(os.Getenv("ENTRYPOINT_S3_PATH"))
