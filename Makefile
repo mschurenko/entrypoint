@@ -1,7 +1,5 @@
-
 test:
 	docker run --rm -t \
-	-v ${HOME}:/root \
 	-v `pwd`:/go/src/entrypoint \
 	-e AWS_REGION="us-west-2" \
 	-e AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
