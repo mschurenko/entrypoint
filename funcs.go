@@ -49,6 +49,7 @@ func init() {
 		"getNumCPU":      getNumCPU,
 		"getNameServers": getNameServers,
 		"getHostname":    getHostname,
+		"getRegion":      getRegion,
 		"mulf":           func(a, b float64) float64 { return a * b },
 	}
 

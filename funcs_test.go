@@ -182,6 +182,7 @@ func TestRenderTmpl(t *testing.T) {
 	production web db is prod-db1
 	production web cache is prod-cache1
 	value of /mschurenko/entrypoint/test_secret is mysecret
+	aws region is us-west-2
 	`
 
 	tmplStr := `
@@ -189,6 +190,7 @@ func TestRenderTmpl(t *testing.T) {
 	production web db is {{ (index .Vars .EnvVars.MY_ENV).web.db }}
 	production web cache is {{ (index .Vars .EnvVars.MY_ENV).web.cache }}
 	value of /mschurenko/entrypoint/test_secret is {{ getSecret "/mschurenko/entrypoint/test_secret" }}
+	aws region is {{ getRegion }}
 	`
 
 	if err := ioutil.WriteFile(tmplName, []byte(tmplStr), 0644); err != nil {
