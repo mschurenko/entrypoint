@@ -38,6 +38,7 @@ jobs:
       - run: pwd
       - run: ls -l .
       - run: ls -l ./artifacts
+      - run: docker info
       - run: docker build -t test .
       - run: docker run -t test ls /
 
