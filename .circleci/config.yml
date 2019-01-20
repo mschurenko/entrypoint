@@ -34,6 +34,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: ./artifacts
+      - run: pwd
       - run: ls -l .
       - run: ls -l ./artifacts
       - run: docker build -t test .
