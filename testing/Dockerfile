@@ -1,5 +1,5 @@
 FROM ubuntu:latest
 
-COPY ./artifacts/entrypoint /
+COPY artifacts/entrypoint /
 
 ENTRYPOINT ["/entrypoint"]
