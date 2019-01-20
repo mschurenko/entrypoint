@@ -20,10 +20,25 @@ import (
 
 var sess *session.Session
 var funcMap map[string]interface{}
+var templateOptions = []string{}
+
+const tmplExt string = ".tmpl"
 
 func init() {
 	r := getRegion()
 	sess = session.Must(session.NewSession(&aws.Config{Region: aws.String(r)}))
+}
+
+func init() {
+	templateOption := os.Getenv("ENTRYPOINT_TMPL_OPTION")
+	switch templateOption {
+	case "default", "invalid", "zero", "error":
+		templateOptions = []string{"missingkey=" + templateOption}
+	case "":
+		templateOptions = []string{"missingkey=error"}
+	default:
+		log.Fatalf("%v is not a valid option for text/template", templateOption)
+	}
 }
 
 func getRegion() string {

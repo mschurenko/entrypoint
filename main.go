@@ -11,6 +11,11 @@ import (
 	"syscall"
 )
 
+type tmplCtx struct {
+	EnvVars map[string]string
+	Vars    map[string]interface{}
+}
+
 func main() {
 	usage := fmt.Sprintf("Usage: %v cmd [argN...]", os.Args[0])
 
