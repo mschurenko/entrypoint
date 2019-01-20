@@ -28,17 +28,16 @@ jobs:
             - entrypoint
   test:
     docker:
-      - image: docker:latest
+      - image: docker:18.09.1-git
     working_directory: /go/src/github.com/mschurenko/entrypoint/testing
     steps:
       - checkout
       - attach_workspace:
           at: ./artifacts
+      - run: ls -l .
       - run: ls -l ./artifacts
-      - run: |
-          docker build -t test .
-      - run: |
-          docker run -t test ls /
+      - run: docker build -t test .
+      - run: docker run -t test ls /
 
   publish-github-release:
     environment:
