@@ -39,7 +39,7 @@ jobs:
       - run: ls -l .
       - run: ls -l ./artifacts
       - run: docker info
-      - run: docker build -t test -f testing/Dockerfile
+      - run: docker build -t test -f testing/Dockerfile .
       - run: docker run -t test ls /
 
   publish-github-release:
