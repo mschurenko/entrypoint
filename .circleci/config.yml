@@ -32,6 +32,7 @@ jobs:
     working_directory: /go/src/github.com/mschurenko/entrypoint/testing
     steps:
       - checkout
+      - setup_remote_docker
       - attach_workspace:
           at: ./artifacts
       - run: pwd
