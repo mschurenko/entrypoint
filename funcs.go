@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
@@ -41,6 +42,21 @@ func init() {
 	}
 }
 
+func init() {
+	funcMap = map[string]interface{}{
+		"getSecret":      getSecret,
+		"getNumCPU":      getNumCPU,
+		"getNameServers": getNameServers,
+		"getHostname":    getHostname,
+		"getRegion":      getRegion,
+		"mulf":           func(a, b float64) float64 { return a * b },
+	}
+
+	for k, v := range sprig.FuncMap() {
+		funcMap[k] = v
+	}
+}
+
 func getRegion() string {
 	// use AWS_REGION if set
 	if v := os.Getenv("AWS_REGION"); v != "" {
@@ -56,21 +72,6 @@ func getRegion() string {
 	bs, err := ioutil.ReadAll(r.Body)
 
 	return string(bs[0 : len(bs)-1])
-}
-
-func init() {
-	funcMap = map[string]interface{}{
-		"getSecret":      getSecret,
-		"getNumCPU":      getNumCPU,
-		"getNameServers": getNameServers,
-		"getHostname":    getHostname,
-		"getRegion":      getRegion,
-		"mulf":           func(a, b float64) float64 { return a * b },
-	}
-
-	for k, v := range sprig.FuncMap() {
-		funcMap[k] = v
-	}
 }
 
 func stripExt(f string) string {
@@ -189,7 +190,7 @@ func getVarsFromS3(s3Path string) map[string]interface{} {
 func renderTmpl(tmplFile string, ctx interface{}) {
 	newFile := stripExt(tmplFile)
 
-	t := template.Must(template.New(tmplFile).Funcs(funcMap).Option(templateOptions...).ParseFiles(tmplFile))
+	t := template.Must(template.New(filepath.Base(tmplFile)).Funcs(funcMap).Option(templateOptions...).ParseFiles(tmplFile))
 
 	f, err := os.Create(newFile)
 	if err != nil {
