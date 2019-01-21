@@ -6,11 +6,11 @@ import (
 	"log"
 	"math"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
@@ -18,7 +18,6 @@ import (
 
 const testSecret = "/mschurenko/entrypoint/test_secret"
 const testSecretValue = "mysecret"
-const secretErrNotFound = "ResourceNotFoundException: Secrets Manager can’t find the specified secret."
 const s3Bucket = "mschurenko-test"
 const s3Key = "fixtures/vars.yml"
 
@@ -40,8 +39,10 @@ func secretExists(svc *secretsmanager.SecretsManager) bool {
 	o, err := describeSecret(svc)
 
 	if err != nil {
-		if strings.HasPrefix(err.Error(), secretErrNotFound) {
-			return false
+		if awsErr, ok := err.(awserr.Error); ok {
+			if awsErr.Code() == secretsmanager.ErrCodeResourceNotFoundException {
+				return false
+			}
 		}
 		log.Fatalf("desribe secret failed: %v", err)
 	}
@@ -53,8 +54,10 @@ func secretExists(svc *secretsmanager.SecretsManager) bool {
 	// secret exists but is still not deleted, so wait until secret is gone
 	for i := 0; i < 10; i++ {
 		if _, err := describeSecret(svc); err != nil {
-			if strings.HasPrefix(err.Error(), secretErrNotFound) {
-				break
+			if awsErr, ok := err.(awserr.Error); ok {
+				if awsErr.Code() == secretsmanager.ErrCodeResourceNotFoundException {
+					break
+				}
 			}
 		}
 		time.Sleep(time.Duration(math.Exp2(float64(i))) * time.Second)
