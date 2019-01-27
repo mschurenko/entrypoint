@@ -157,25 +157,22 @@ func TestRenderStr(t *testing.T) {
 
 }
 
+func TestGetVarsFromFileLocal(t *testing.T) {
+	f := "./fixtures/vars.yml"
+	getVarsFromFile(f)
+}
+
+func TestGetVarsFromFileS3(t *testing.T) {
+	getVarsFromFile(s3Prefix + s3Bucket + "/" + s3Key)
+}
+
 func TestRenderTmpl(t *testing.T) {
+	vars := getVarsFromFile(s3Prefix + s3Bucket + "/" + s3Key)
 	ctx := tmplCtx{
 		EnvVars: map[string]string{
 			"MY_ENV": "production",
 		},
-		Vars: map[string]interface{}{
-			"production": map[string]map[string]string{
-				"web": map[string]string{
-					"db":    "prod-db1",
-					"cache": "prod-cache1",
-				},
-			},
-			"staging": map[string]map[string]string{
-				"web": map[string]string{
-					"db":    "stage-db1",
-					"cache": "stage-cache1",
-				},
-			},
-		},
+		Vars: vars,
 	}
 
 	tmplName := "test.conf.tmpl"
@@ -186,6 +183,7 @@ func TestRenderTmpl(t *testing.T) {
 	production web cache is prod-cache1
 	value of /mschurenko/entrypoint/test_secret is mysecret
 	aws region is us-west-2
+	value of production.web.password is mysecret
 	`
 
 	tmplStr := `
@@ -194,6 +192,7 @@ func TestRenderTmpl(t *testing.T) {
 	production web cache is {{ (index .Vars .EnvVars.MY_ENV).web.cache }}
 	value of /mschurenko/entrypoint/test_secret is {{ getSecret "/mschurenko/entrypoint/test_secret" }}
 	aws region is {{ getRegion }}
+	value of production.web.password is {{ .Vars.production.web.password }}
 	`
 
 	if err := ioutil.WriteFile(tmplName, []byte(tmplStr), 0644); err != nil {
@@ -215,8 +214,4 @@ func TestRenderTmpl(t *testing.T) {
 		t.Errorf("%v is not equal to %v", string(sb), exceptedStr)
 	}
 
-}
-
-func TestGetVarsFromS3(t *testing.T) {
-	getVarsFromS3(s3Bucket + "/" + s3Key)
 }

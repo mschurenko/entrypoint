@@ -19,13 +19,12 @@ type tmplCtx struct {
 func main() {
 	usage := fmt.Sprintf("Usage: %v cmd [argN...]", os.Args[0])
 
-	fmt.Println(os.Args)
-
 	if len(os.Args) < 2 {
 		log.Fatal(usage)
 	}
 
 	execArgs := os.Args[1:]
+	log.Println("entrypoint arguments:", strings.Join(execArgs, " "))
 
 	cmdPath, err := exec.LookPath(execArgs[0])
 	if err != nil {
@@ -39,14 +38,20 @@ func main() {
 	}
 
 	vars := make(map[string]interface{})
-	if os.Getenv("ENTRYPOINT_S3_PATH") != "" {
-		vars = getVarsFromS3(os.Getenv("ENTRYPOINT_S3_PATH"))
+	if os.Getenv("ENTRYPOINT_VARS_FILE") != "" {
+		vars = getVarsFromFile(os.Getenv("ENTRYPOINT_VARS_FILE"))
 	}
 
+	var containerVars []string
 	var templates []string
 
 	// parse ENV vars
 	for k, v := range envVars {
+
+		if !strings.HasPrefix(k, "ENTRYPOINT_") {
+			containerVars = append(containerVars, k+"="+v)
+		}
+
 		matched, _ := regexp.Match(`^{{.*}}$`, []byte(v))
 		if matched {
 			var rendered string
@@ -82,9 +87,7 @@ func main() {
 
 	}
 
-	fmt.Println(execArgs)
-
-	err = syscall.Exec(cmdPath, execArgs, os.Environ())
+	err = syscall.Exec(cmdPath, execArgs, containerVars)
 	if err != nil {
 		log.Fatal(err)
 	}

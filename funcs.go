@@ -24,6 +24,7 @@ var funcMap map[string]interface{}
 var templateOptions = []string{}
 
 const tmplExt string = ".tmpl"
+const s3Prefix string = "s3://"
 
 func init() {
 	r := getRegion()
@@ -66,12 +67,12 @@ func getRegion() string {
 	client := &http.Client{Timeout: 5 * time.Second}
 	r, err := client.Get("http://169.254.169.254/latest/meta-data/placement/availability-zone")
 	if err != nil {
-		log.Fatalf("could not connect to ECS metadata: %v\n", err)
+		log.Fatalf("getRegion: could not connect to ECS metadata: %v\n", err)
 	}
 
 	bs, err := ioutil.ReadAll(r.Body)
 
-	return string(bs[0 : len(bs)-1])
+	return string(bs[:len(bs)-1])
 }
 
 func stripExt(f string) string {
@@ -86,17 +87,16 @@ func getSecret(name string) string {
 
 	output, err := svc.GetSecretValue(input)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("getSecret: %v", err)
 	}
 
 	return *output.SecretString
 }
 
 func getNumCPU() float64 {
-	f := "/proc/cpuinfo"
-	bs, err := ioutil.ReadFile(f)
+	bs, err := ioutil.ReadFile("/proc/cpuinfo")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("getNumCPU: %v", err)
 	}
 
 	lines := strings.Split(string(bs), "\n")
@@ -120,7 +120,7 @@ func getNumCPU() float64 {
 func getNameServers() []string {
 	bs, err := ioutil.ReadFile("/etc/resolv.conf")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("getNameServers: %v", err)
 	}
 
 	var ns []string
@@ -139,13 +139,42 @@ func getNameServers() []string {
 func getHostname() string {
 	s, err := os.Hostname()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("getHostname: %v", err)
 	}
 
 	return s
 }
 
-func getVarsFromS3(s3Path string) map[string]interface{} {
+func getVarsFromFile(file string) map[string]interface{} {
+	var s string
+
+	if strings.HasPrefix(file, s3Prefix) {
+		s = getFileFromS3(file)
+	} else {
+		// assume this is a local file
+		bs, err := ioutil.ReadFile(file)
+		if err != nil {
+			log.Fatalf("getVarsFromFile: %v", err)
+		}
+
+		s = string(bs)
+	}
+
+	// context is nil for vars file
+	y := renderStr("vars", s, nil)
+
+	v := make(map[string]interface{})
+	err := yaml.Unmarshal([]byte(y), &v)
+	if err != nil {
+		log.Fatalf("getVarsFromFile: %v", err)
+	}
+
+	return v
+}
+
+func getFileFromS3(file string) string {
+	s3Path := strings.Split(file, s3Prefix)[1]
+
 	xs := strings.Split(s3Path, "/")
 
 	var filtered []string
@@ -156,7 +185,7 @@ func getVarsFromS3(s3Path string) map[string]interface{} {
 	}
 
 	if len(filtered) < 2 {
-		log.Fatalf("%v is not a valid path", s3Path)
+		log.Fatalf("getFileFromS3: %v is not a valid path", s3Path)
 	}
 	bucket := filtered[0]
 	path := strings.Join(filtered[1:], "/")
@@ -170,21 +199,14 @@ func getVarsFromS3(s3Path string) map[string]interface{} {
 
 	o, err := svc.GetObject(input)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("getFileFromS3: %v", err)
 	}
 
 	bs, err := ioutil.ReadAll(o.Body)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("getFileFromS3: %v", err)
 	}
-
-	d := make(map[string]interface{})
-	err = yaml.Unmarshal(bs, &d)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return d
+	return string(bs)
 }
 
 func renderTmpl(tmplFile string, ctx interface{}) {
@@ -194,11 +216,11 @@ func renderTmpl(tmplFile string, ctx interface{}) {
 
 	f, err := os.Create(newFile)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("renderTmpl: %v", err)
 	}
 	err = t.Execute(f, ctx)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("renderTmpl: %v", err)
 	}
 }
 
@@ -208,7 +230,7 @@ func renderStr(name, tmpl string, ctx interface{}) string {
 	var b bytes.Buffer
 	err := t.Execute(&b, ctx)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("renderStr: %v", err)
 	}
 
 	return b.String()

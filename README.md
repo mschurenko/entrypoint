@@ -14,7 +14,7 @@ type tmplCtx struct {
 ```
 
 Which can be referenced like:
-```gohtml
+```gotemplate
 value of MY_VAR is {{ .EnvVars["MY_VAR"] }}
 ```
 
@@ -39,8 +39,7 @@ funcMap = map[string]interface{}{
 In addition to the above github.com/Masterminds/sprig are included.
 
 ## Dealing with empty values
-By default `entrypoint` sets `template.Option` to `[]string{"missing=error"}`. This can be changed by setting `ENTRYPOINT_TMPL_OPTION`.
-
+By default `entrypoint` sets `template.Option` to `"missing=error"`. This can be changed by setting `ENTRYPOINT_TMPL_OPTION`.
 
 ## Special Environment Variales
 The following environment variables are specfic to `entrypoint` and will not be passed into your container:
@@ -51,3 +50,28 @@ ENTRYPOINT_TMPL_OPTION
 ```
 
 ## Testing templates
+
+## Examples
+# `Dockerfile`
+```dockerfile
+...
+# entrypoint
+RUN curl -L https://github.com/mschurenko/entrypoint/releases/download/0.1.4/entrypoint \
+  -o /entrypoint && chmod +x /entrypoint
+
+# templates
+WORKDIR /conf
+COPY tmpl1.conf.tmpl .
+COPY tmpl2.conf.tmpl .
+
+ENTRYPOINT ["/entrypoint"]
+```
+
+# Template
+set `ENV` and `APP` environment variables and refer to them in your template:
+```gotemplate
+{{- $env := .EnvVars.ENV -}}
+{{- $app := .EnvVars.APP -}}
+{{- $vars := index (index .Vars $env) $app -}}
+http_port: {{ $vars.http_port }}
+```

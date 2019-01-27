@@ -5,7 +5,7 @@ test:
 	-e AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
 	-e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
 	-w /go/src/entrypoint \
-	golang:latest go test -v
+	golang:latest go test -v -cover
 
 test_container:
 	docker run --rm -ti \
@@ -13,7 +13,7 @@ test_container:
 	-e AWS_REGION="us-west-2" \
 	-e AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
 	-e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
-	-e ENTRYPOINT_S3_PATH="mschurenko-test/fixtures/vars.yml" \
+	-e ENTRYPOINT_VARS_FILE="/go/src/entrypoint/fixtures/vars-no-secret.yml" \
 	-e ENTRYPOINT_TEMPLATES="test1.conf.tmpl,test2.conf.tmpl" \
 	-w /go/src/entrypoint \
 	golang:latest ./test.sh
