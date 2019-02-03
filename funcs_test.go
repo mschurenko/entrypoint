@@ -147,6 +147,24 @@ func teardown(sess *session.Session) {
 	}
 }
 
+func TestCheckEntrypointVarValid(t *testing.T) {
+	valid := "ENTRYPOINT_VARS_FILE"
+
+	if !checkEntrypointVar(valid) {
+		t.Errorf("%v should be a valid env var", valid)
+	}
+
+}
+
+func TestCheckEntrypointVarInValid(t *testing.T) {
+	invalid := "ENTRYPOINT_X"
+
+	if checkEntrypointVar(invalid) {
+		t.Errorf("%v should not be a valid env var", invalid)
+	}
+
+}
+
 func TestRenderStr(t *testing.T) {
 	tmpl := `{{ mul 2 2 }}`
 	exepcted := `4`

@@ -22,6 +22,11 @@ import (
 var sess *session.Session
 var funcMap map[string]interface{}
 var templateOptions = []string{}
+var entrypointEnvVars = []string{
+	"ENTRYPOINT_VARS_FILE",
+	"ENTRYPOINT_TEMPLATES",
+	"ENTRYPOINT_TMPL_OPTION",
+}
 
 const tmplExt string = ".tmpl"
 const s3Prefix string = "s3://"
@@ -56,6 +61,16 @@ func init() {
 	for k, v := range sprig.FuncMap() {
 		funcMap[k] = v
 	}
+}
+
+func checkEntrypointVar(v string) bool {
+	for _, e := range entrypointEnvVars {
+		if v == e {
+			return true
+		}
+	}
+
+	return false
 }
 
 func getRegion() string {

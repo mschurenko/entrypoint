@@ -48,7 +48,11 @@ func main() {
 	// parse ENV vars
 	for k, v := range envVars {
 
-		if !strings.HasPrefix(k, "ENTRYPOINT_") {
+		if strings.HasPrefix(k, "ENTRYPOINT_") {
+			if !checkEntrypointVar(k) {
+				log.Fatalf("Error: %v is not one of %v", k, entrypointEnvVars)
+			}
+		} else {
 			containerVars = append(containerVars, k+"="+v)
 		}
 
