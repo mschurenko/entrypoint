@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"text/template"
 	"time"
@@ -20,8 +21,6 @@ import (
 )
 
 var sess *session.Session
-var funcMap map[string]interface{}
-var templateOptions = []string{}
 var entrypointEnvVars = []string{
 	"ENTRYPOINT_VARS_FILE",
 	"ENTRYPOINT_TEMPLATES",
@@ -34,33 +33,6 @@ const s3Prefix string = "s3://"
 func init() {
 	r := getRegion()
 	sess = session.Must(session.NewSession(&aws.Config{Region: aws.String(r)}))
-}
-
-func init() {
-	templateOption := os.Getenv("ENTRYPOINT_TMPL_OPTION")
-	switch templateOption {
-	case "default", "invalid", "zero", "error":
-		templateOptions = []string{"missingkey=" + templateOption}
-	case "":
-		templateOptions = []string{"missingkey=error"}
-	default:
-		log.Fatalf("%v is not a valid option for text/template", templateOption)
-	}
-}
-
-func init() {
-	funcMap = map[string]interface{}{
-		"getSecret":      getSecret,
-		"getNumCPU":      getNumCPU,
-		"getNameServers": getNameServers,
-		"getHostname":    getHostname,
-		"getRegion":      getRegion,
-		"mulf":           func(a, b float64) float64 { return a * b },
-	}
-
-	for k, v := range sprig.FuncMap() {
-		funcMap[k] = v
-	}
 }
 
 func checkEntrypointVar(v string) bool {
@@ -108,30 +80,6 @@ func getSecret(name string) string {
 	return *output.SecretString
 }
 
-func getNumCPU() float64 {
-	bs, err := ioutil.ReadFile("/proc/cpuinfo")
-	if err != nil {
-		log.Fatalf("getNumCPU: %v", err)
-	}
-
-	lines := strings.Split(string(bs), "\n")
-
-	var numProcs float64
-	for _, l := range lines {
-		if l == "" {
-			continue
-		}
-		xs := strings.Split(l, ":")
-		key := strings.TrimSpace(xs[0])
-
-		if key == "processor" {
-			numProcs++
-		}
-	}
-
-	return numProcs
-}
-
 func getNameServers() []string {
 	bs, err := ioutil.ReadFile("/etc/resolv.conf")
 	if err != nil {
@@ -176,7 +124,7 @@ func getVarsFromFile(file string) map[string]interface{} {
 	}
 
 	// context is nil for vars file
-	y := renderStr("vars", s, nil)
+	y := newTpl("vars", nil).renderStr(s)
 
 	v := make(map[string]interface{})
 	err := yaml.Unmarshal([]byte(y), &v)
@@ -224,26 +172,69 @@ func getFileFromS3(file string) string {
 	return string(bs)
 }
 
-func renderTmpl(tmplFile string, ctx interface{}) {
-	newFile := stripExt(tmplFile)
+type tpl struct {
+	name    string
+	output  string
+	ctx     interface{}
+	opts    []string
+	funcMap map[string]interface{}
+}
 
-	t := template.Must(template.New(filepath.Base(tmplFile)).Funcs(funcMap).Option(templateOptions...).ParseFiles(tmplFile))
+func newTpl(name string, ctx interface{}) tpl {
+	opts := []string{}
+	opt := os.Getenv("ENTRYPOINT_TMPL_OPTION")
+	switch opt {
+	case "default", "invalid", "zero", "error":
+		opts = []string{"missingkey=" + opt}
+	case "":
+		opts = []string{"missingkey=error"}
+	default:
+		log.Fatalf("%v is not a valid option for text/template", opt)
+	}
 
-	f, err := os.Create(newFile)
+	funcMap := map[string]interface{}{
+		"getSecret":      getSecret,
+		"getNumCPU":      runtime.NumCPU,
+		"getNameServers": getNameServers,
+		"getHostname":    getHostname,
+		"getRegion":      getRegion,
+		"mulf":           func(a, b float64) float64 { return a * b },
+	}
+	for k, v := range sprig.FuncMap() {
+		funcMap[k] = v
+	}
+
+	var output string
+	if _, err := os.Stat(name); err == nil {
+		output = strings.Replace(strings.Replace(name, ".tpl", "", 1), ".tmpl", "", 1)
+	}
+
+	return tpl{
+		name:    name,
+		output:  output,
+		ctx:     ctx,
+		opts:    opts,
+		funcMap: funcMap,
+	}
+}
+
+func (tpl tpl) renderFile() {
+	t := template.Must(template.New(filepath.Base(tpl.name)).Funcs(tpl.funcMap).Option(tpl.opts...).ParseFiles(tpl.name))
+	f, err := os.Create(tpl.output)
 	if err != nil {
 		log.Fatalf("renderTmpl: %v", err)
 	}
-	err = t.Execute(f, ctx)
+	err = t.Execute(f, tpl.ctx)
 	if err != nil {
 		log.Fatalf("renderTmpl: %v", err)
 	}
 }
 
-func renderStr(name, tmpl string, ctx interface{}) string {
-	t := template.Must(template.New(name).Funcs(funcMap).Option(templateOptions...).Parse(tmpl))
+func (tpl tpl) renderStr(s string) string {
+	t := template.Must(template.New(tpl.name).Funcs(tpl.funcMap).Option(tpl.opts...).Parse(s))
 
 	var b bytes.Buffer
-	err := t.Execute(&b, ctx)
+	err := t.Execute(&b, tpl.ctx)
 	if err != nil {
 		log.Fatalf("renderStr: %v", err)
 	}

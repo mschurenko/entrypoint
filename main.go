@@ -60,9 +60,9 @@ func main() {
 		if matched {
 			var rendered string
 			if len(vars) > 0 {
-				rendered = renderStr(k, v, tmplCtx{Vars: vars})
+				rendered = newTpl(k, tmplCtx{Vars: vars}).renderStr(v)
 			} else {
-				rendered = renderStr(k, v, nil)
+				rendered = newTpl(k, nil).renderStr(v)
 			}
 			os.Setenv(k, rendered)
 		}
@@ -82,7 +82,7 @@ func main() {
 		for _, t := range templates {
 			wg.Add(1)
 			go func(t string) {
-				renderTmpl(t, ctx)
+				newTpl(t, ctx).renderFile()
 				wg.Done()
 			}(t)
 		}

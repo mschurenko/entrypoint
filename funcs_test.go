@@ -168,7 +168,7 @@ func TestCheckEntrypointVarInValid(t *testing.T) {
 func TestRenderStr(t *testing.T) {
 	tmpl := `{{ mul 2 2 }}`
 	exepcted := `4`
-	resp := renderStr("test", tmpl, nil)
+	resp := newTpl("test", nil).renderStr(tmpl)
 	if resp != exepcted {
 		t.Errorf("%v is not equal to %v\n", resp, exepcted)
 	}
@@ -216,14 +216,13 @@ func TestRenderTmpl(t *testing.T) {
 	if err := ioutil.WriteFile(tmplName, []byte(tmplStr), 0644); err != nil {
 		t.Error(err)
 	}
-
 	defer os.Remove(tmplName)
 
-	renderTmpl(tmplName, ctx)
+	tpl := newTpl(tmplName, ctx)
+	tpl.renderFile()
+	defer os.Remove(tpl.output)
 
-	defer os.Remove(stripExt(tmplName))
-
-	sb, err := ioutil.ReadFile(stripExt(tmplName))
+	sb, err := ioutil.ReadFile(tpl.output)
 	if err != nil {
 		t.Error(err)
 	}
