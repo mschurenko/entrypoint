@@ -42,30 +42,29 @@ func main() {
 		vars = getVarsFromFile(os.Getenv("ENTRYPOINT_VARS_FILE"))
 	}
 
-	var containerVars []string
+	containerVars := make(map[string]string)
 	var templates []string
 
 	// parse ENV vars
 	for k, v := range envVars {
-
 		if strings.HasPrefix(k, "ENTRYPOINT_") {
 			if !checkEntrypointVar(k) {
 				log.Fatalf("Error: %v is not one of %v", k, entrypointEnvVars)
 			}
 		} else {
-			containerVars = append(containerVars, k+"="+v)
+			containerVars[k] = v
 		}
 
-		matched, _ := regexp.Match(`^{{.*}}$`, []byte(v))
-		if matched {
+		if matched, _ := regexp.Match(`^{{.*}}$`, []byte(v)); matched {
 			var rendered string
 			if len(vars) > 0 {
 				rendered = newTpl(k, tmplCtx{Vars: vars}).renderStr(v)
 			} else {
 				rendered = newTpl(k, nil).renderStr(v)
 			}
-			os.Setenv(k, rendered)
+			containerVars[k] = rendered
 		}
+
 		if k == "ENTRYPOINT_TEMPLATES" {
 			templates = strings.Split(v, ",")
 		}
@@ -91,7 +90,12 @@ func main() {
 
 	}
 
-	err = syscall.Exec(cmdPath, execArgs, containerVars)
+	var containerVarsSlice []string
+	for k, v := range containerVars {
+		containerVarsSlice = append(containerVarsSlice, k+"="+v)
+	}
+
+	err = syscall.Exec(cmdPath, execArgs, containerVarsSlice)
 	if err != nil {
 		log.Fatal(err)
 	}
