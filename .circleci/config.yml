@@ -5,7 +5,7 @@ version: 2
 jobs:
   build:
     environment:
-      VERSION: &version 0.1.8
+      VERSION: &version 0.1.9
       AWS_REGION: us-west-2
       MY_ENV: testing
     docker:
