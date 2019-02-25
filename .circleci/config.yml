@@ -7,6 +7,7 @@ jobs:
     environment:
       VERSION: &version 0.1.8
       AWS_REGION: us-west-2
+      MY_ENV: testing
     docker:
       - image: &image golang:latest
 

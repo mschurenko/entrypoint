@@ -179,7 +179,7 @@ func TestRenderTmpl(t *testing.T) {
 	tmplName := "test.conf.tmpl"
 
 	exceptedStr := `
-	MY_ENV is production
+	MY_ENV is testing
 	value of /mschurenko/entrypoint/test_secret is mysecret
 	aws region is us-west-2
 	`
