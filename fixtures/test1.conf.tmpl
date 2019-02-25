@@ -1,5 +1,5 @@
 test1 conf
-aws region: {{ getMetadata "region" }}
+aws region: {{ ec2Metadata "region" }}
 {{ range list 0 1 }}
 i: {{ . -}}
 {{ end }}

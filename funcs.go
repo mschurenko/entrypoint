@@ -29,7 +29,7 @@ const tmplExt string = ".tmpl"
 const s3Prefix string = "s3://"
 
 func init() {
-	r := getMetadata("region")
+	r := ec2Metadata("region")
 	sess = session.Must(session.NewSession(&aws.Config{Region: aws.String(r)}))
 }
 
@@ -47,7 +47,7 @@ func checkEntrypointVar(v string) bool {
 most of the same arguments as:
 https://aws.amazon.com/code/ec2-instance-metadata-query-tool/
 */
-func getMetadata(path string) string {
+func ec2Metadata(path string) string {
 	baseURL := "http://169.254.169.254/latest/"
 	client := &http.Client{Timeout: 3 * time.Second}
 
@@ -73,11 +73,11 @@ func getMetadata(path string) string {
 		}
 		r, err = client.Get(baseURL + "/meta-data/placement/availability-zone/")
 	default:
-		log.Fatalf("getMetadata: unsupported path %s", path)
+		log.Fatalf("ec2Metadata: unsupported path %s", path)
 	}
 
 	if err != nil {
-		log.Fatalf("getMetadata: %v\n", err)
+		log.Fatalf("ec2Metadata: %v\n", err)
 	}
 
 	bs, err := ioutil.ReadAll(r.Body)
@@ -87,7 +87,7 @@ func getMetadata(path string) string {
 	return string(bs)
 }
 
-func getSecret(name string) string {
+func secret(name string) string {
 	svc := secretsmanager.New(sess)
 	input := &secretsmanager.GetSecretValueInput{
 		SecretId: aws.String(name),
@@ -95,16 +95,16 @@ func getSecret(name string) string {
 
 	output, err := svc.GetSecretValue(input)
 	if err != nil {
-		log.Fatalf("getSecret: %v", err)
+		log.Fatalf("secret: %v", err)
 	}
 
 	return *output.SecretString
 }
 
-func getNameServers() []string {
+func nameServers() []string {
 	bs, err := ioutil.ReadFile("/etc/resolv.conf")
 	if err != nil {
-		log.Fatalf("getNameServers: %v", err)
+		log.Fatalf("nameServers: %v", err)
 	}
 
 	var ns []string
@@ -120,10 +120,10 @@ func getNameServers() []string {
 	return ns
 }
 
-func getHostname() string {
+func hostname() string {
 	s, err := os.Hostname()
 	if err != nil {
-		log.Fatalf("getHostname: %v", err)
+		log.Fatalf("hostname: %v", err)
 	}
 
 	return s
@@ -150,11 +150,11 @@ func newTpl(name string) tpl {
 	}
 
 	funcMap := map[string]interface{}{
-		"getSecret":      getSecret,
-		"getNumCpu":      runtime.NumCPU,
-		"getNameServers": getNameServers,
-		"getHostname":    getHostname,
-		"getMetadata":    getMetadata,
+		"secret":      secret,
+		"numCpu":      runtime.NumCPU,
+		"nameServers": nameServers,
+		"hostname":    hostname,
+		"ec2Metadata": ec2Metadata,
 	}
 	for k, v := range sprig.FuncMap() {
 		funcMap[k] = v

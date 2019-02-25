@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"io/ioutil"
 	"log"
 	"math"
@@ -12,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
 )
 
@@ -22,7 +20,7 @@ const s3Bucket = "mschurenko-test"
 const s3Key = "fixtures/vars.yml"
 
 func TestMain(m *testing.M) {
-	r := getMetadata("region")
+	r := ec2Metadata("region")
 	sess := session.Must(session.NewSession(&aws.Config{Region: aws.String(r)}))
 	setup(sess)
 	rc := m.Run()
@@ -93,32 +91,7 @@ func updateSecret(svc *secretsmanager.SecretsManager) error {
 	return err
 }
 
-func putObject(svc *s3.S3, file string) error {
-	bs, err := ioutil.ReadFile(file)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	input := &s3.PutObjectInput{
-		ContentType: aws.String("application/x-yaml "),
-		Bucket:      aws.String(s3Bucket),
-		Body:        bytes.NewReader(bs),
-		Key:         aws.String(file),
-	}
-
-	_, err = svc.PutObject(input)
-
-	return err
-}
-
 func setup(sess *session.Session) {
-	// add yaml file to s3
-	s3Svc := s3.New(sess)
-	if err := putObject(s3Svc, s3Key); err != nil {
-		log.Fatal(err)
-	}
-
-	// add secret
 	smSvc := secretsmanager.New(sess)
 	switch secretExists(smSvc) {
 	case true:
@@ -186,8 +159,8 @@ func TestRenderTmpl(t *testing.T) {
 
 	tmplStr := `
 	MY_ENV is {{ env "MY_ENV" }}
-	value of /mschurenko/entrypoint/test_secret is {{ getSecret "/mschurenko/entrypoint/test_secret" }}
-	aws region is {{ getMetadata "region" }}
+	value of /mschurenko/entrypoint/test_secret is {{ secret "/mschurenko/entrypoint/test_secret" }}
+	aws region is {{ ec2Metadata "region" }}
 	`
 
 	if err := ioutil.WriteFile(tmplName, []byte(tmplStr), 0644); err != nil {
