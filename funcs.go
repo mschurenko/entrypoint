@@ -15,9 +15,7 @@ import (
 	"github.com/Masterminds/sprig"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/secretsmanager"
-	yaml "gopkg.in/yaml.v2"
 )
 
 var sess *session.Session
@@ -131,70 +129,6 @@ func getHostname() string {
 	return s
 }
 
-func getVarsFromFile(file string) map[string]interface{} {
-	var s string
-
-	if strings.HasPrefix(file, s3Prefix) {
-		s = getFileFromS3(file)
-	} else {
-		// assume this is a local file
-		bs, err := ioutil.ReadFile(file)
-		if err != nil {
-			log.Fatalf("getVarsFromFile: %v", err)
-		}
-
-		s = string(bs)
-	}
-
-	// context is nil for vars file
-	y := newTpl("vars", nil).renderStr(s)
-
-	v := make(map[string]interface{})
-	err := yaml.Unmarshal([]byte(y), &v)
-	if err != nil {
-		log.Fatalf("getVarsFromFile: %v", err)
-	}
-
-	return v
-}
-
-func getFileFromS3(file string) string {
-	s3Path := strings.Split(file, s3Prefix)[1]
-
-	xs := strings.Split(s3Path, "/")
-
-	var filtered []string
-	for i := 0; i < len(xs); i++ {
-		if xs[i] != "" {
-			filtered = append(filtered, xs[i])
-		}
-	}
-
-	if len(filtered) < 2 {
-		log.Fatalf("getFileFromS3: %v is not a valid path", s3Path)
-	}
-	bucket := filtered[0]
-	path := strings.Join(filtered[1:], "/")
-
-	svc := s3.New(sess)
-
-	input := &s3.GetObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(path),
-	}
-
-	o, err := svc.GetObject(input)
-	if err != nil {
-		log.Fatalf("getFileFromS3: %v", err)
-	}
-
-	bs, err := ioutil.ReadAll(o.Body)
-	if err != nil {
-		log.Fatalf("getFileFromS3: %v", err)
-	}
-	return string(bs)
-}
-
 type tpl struct {
 	name    string
 	output  string
@@ -203,7 +137,7 @@ type tpl struct {
 	funcMap map[string]interface{}
 }
 
-func newTpl(name string, ctx interface{}) tpl {
+func newTpl(name string) tpl {
 	opts := []string{}
 	opt := os.Getenv("ENTRYPOINT_TMPL_OPTION")
 	switch opt {
@@ -234,7 +168,6 @@ func newTpl(name string, ctx interface{}) tpl {
 	return tpl{
 		name:    name,
 		output:  output,
-		ctx:     ctx,
 		opts:    opts,
 		funcMap: funcMap,
 	}
@@ -246,7 +179,7 @@ func (tpl tpl) renderFile() {
 	if err != nil {
 		log.Fatalf("renderTmpl: %v", err)
 	}
-	err = t.Execute(f, tpl.ctx)
+	err = t.Execute(f, nil)
 	if err != nil {
 		log.Fatalf("renderTmpl: %v", err)
 	}
@@ -256,7 +189,7 @@ func (tpl tpl) renderStr(s string) string {
 	t := template.Must(template.New(tpl.name).Funcs(tpl.funcMap).Option(tpl.opts...).Parse(s))
 
 	var b bytes.Buffer
-	err := t.Execute(&b, tpl.ctx)
+	err := t.Execute(&b, nil)
 	if err != nil {
 		log.Fatalf("renderStr: %v", err)
 	}

@@ -4,6 +4,7 @@ test:
 	-e AWS_REGION="us-west-2" \
 	-e AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
 	-e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
+	-e MY_ENV="production" \
 	-w /go/src/entrypoint \
 	golang:latest go test -v -cover
 

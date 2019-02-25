@@ -14,11 +14,6 @@ import (
 // will be set va -ldflags
 var version = ""
 
-type tmplCtx struct {
-	envVars map[string]string
-	vars    map[string]interface{}
-}
-
 func main() {
 	usage := fmt.Sprintf("Usage: %v cmd [argN...]", os.Args[0])
 
@@ -41,11 +36,6 @@ func main() {
 		envVars[s[0]] = s[1]
 	}
 
-	vars := make(map[string]interface{})
-	if os.Getenv("ENTRYPOINT_VARS_FILE") != "" {
-		vars = getVarsFromFile(os.Getenv("ENTRYPOINT_VARS_FILE"))
-	}
-
 	containerVars := make(map[string]string)
 	var templates []string
 
@@ -60,13 +50,7 @@ func main() {
 		}
 
 		if matched, _ := regexp.Match(`^{{.*}}$`, []byte(v)); matched {
-			var rendered string
-			if len(vars) > 0 {
-				rendered = newTpl(k, tmplCtx{vars: vars}).renderStr(v)
-			} else {
-				rendered = newTpl(k, nil).renderStr(v)
-			}
-			containerVars[k] = rendered
+			containerVars[k] = newTpl(k).renderStr(v)
 		}
 
 		if k == "ENTRYPOINT_TEMPLATES" {
@@ -75,17 +59,12 @@ func main() {
 	}
 
 	if len(templates) > 0 {
-		ctx := tmplCtx{
-			envVars: envVars,
-			vars:    vars,
-		}
-
 		wg := sync.WaitGroup{}
 
 		for _, t := range templates {
 			wg.Add(1)
 			go func(t string) {
-				newTpl(t, ctx).renderFile()
+				newTpl(t).renderFile()
 				wg.Done()
 			}(t)
 		}

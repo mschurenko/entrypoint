@@ -168,49 +168,26 @@ func TestCheckEntrypointVarInValid(t *testing.T) {
 func TestRenderStr(t *testing.T) {
 	tmpl := `{{ mul 2 2 }}`
 	exepcted := `4`
-	resp := newTpl("test", nil).renderStr(tmpl)
+	resp := newTpl("test").renderStr(tmpl)
 	if resp != exepcted {
 		t.Errorf("%v is not equal to %v\n", resp, exepcted)
 	}
 
 }
 
-func TestGetVarsFromFileLocal(t *testing.T) {
-	f := "./fixtures/vars.yml"
-	getVarsFromFile(f)
-}
-
-func TestGetVarsFromFileS3(t *testing.T) {
-	getVarsFromFile(s3Prefix + s3Bucket + "/" + s3Key)
-}
-
 func TestRenderTmpl(t *testing.T) {
-	vars := getVarsFromFile(s3Prefix + s3Bucket + "/" + s3Key)
-	ctx := tmplCtx{
-		envVars: map[string]string{
-			"MY_ENV": "production",
-		},
-		vars: vars,
-	}
-
 	tmplName := "test.conf.tmpl"
 
 	exceptedStr := `
 	MY_ENV is production
-	production web db is prod-db1
-	production web cache is prod-cache1
 	value of /mschurenko/entrypoint/test_secret is mysecret
 	aws region is us-west-2
-	value of production.web.password is mysecret
 	`
 
 	tmplStr := `
-	MY_ENV is {{ .envVars.MY_ENV }}
-	production web db is {{ (index .vars .envVars.MY_ENV).web.db }}
-	production web cache is {{ (index .vars .envVars.MY_ENV).web.cache }}
+	MY_ENV is {{ env "MY_ENV" }}
 	value of /mschurenko/entrypoint/test_secret is {{ getSecret "/mschurenko/entrypoint/test_secret" }}
-	aws region is {{ getRegion }}
-	value of production.web.password is {{ .vars.production.web.password }}
+	aws region is {{ getMetadata "region" }}
 	`
 
 	if err := ioutil.WriteFile(tmplName, []byte(tmplStr), 0644); err != nil {
@@ -218,7 +195,7 @@ func TestRenderTmpl(t *testing.T) {
 	}
 	defer os.Remove(tmplName)
 
-	tpl := newTpl(tmplName, ctx)
+	tpl := newTpl(tmplName)
 	tpl.renderFile()
 	defer os.Remove(tpl.output)
 
