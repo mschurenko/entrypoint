@@ -22,7 +22,7 @@ const s3Bucket = "mschurenko-test"
 const s3Key = "fixtures/vars.yml"
 
 func TestMain(m *testing.M) {
-	r := getRegion()
+	r := getMetadata("region")
 	sess := session.Must(session.NewSession(&aws.Config{Region: aws.String(r)}))
 	setup(sess)
 	rc := m.Run()
@@ -187,10 +187,10 @@ func TestGetVarsFromFileS3(t *testing.T) {
 func TestRenderTmpl(t *testing.T) {
 	vars := getVarsFromFile(s3Prefix + s3Bucket + "/" + s3Key)
 	ctx := tmplCtx{
-		EnvVars: map[string]string{
+		envVars: map[string]string{
 			"MY_ENV": "production",
 		},
-		Vars: vars,
+		vars: vars,
 	}
 
 	tmplName := "test.conf.tmpl"
@@ -205,12 +205,12 @@ func TestRenderTmpl(t *testing.T) {
 	`
 
 	tmplStr := `
-	MY_ENV is {{ .EnvVars.MY_ENV }}
-	production web db is {{ (index .Vars .EnvVars.MY_ENV).web.db }}
-	production web cache is {{ (index .Vars .EnvVars.MY_ENV).web.cache }}
+	MY_ENV is {{ .envVars.MY_ENV }}
+	production web db is {{ (index .vars .envVars.MY_ENV).web.db }}
+	production web cache is {{ (index .vars .envVars.MY_ENV).web.cache }}
 	value of /mschurenko/entrypoint/test_secret is {{ getSecret "/mschurenko/entrypoint/test_secret" }}
 	aws region is {{ getRegion }}
-	value of production.web.password is {{ .Vars.production.web.password }}
+	value of production.web.password is {{ .vars.production.web.password }}
 	`
 
 	if err := ioutil.WriteFile(tmplName, []byte(tmplStr), 0644); err != nil {

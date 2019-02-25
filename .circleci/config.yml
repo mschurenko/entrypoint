@@ -5,7 +5,7 @@ version: 2
 jobs:
   build:
     environment:
-      VERSION: &version 0.1.7
+      VERSION: &version 0.1.8
       AWS_REGION: us-west-2
     docker:
       - image: &image golang:latest
@@ -19,8 +19,8 @@ jobs:
       - checkout
       - run: mkdir ./workspace
       - run: go test -v .
-      - run: go install -race
-      - run: cp -v /go/bin/entrypoint ./workspace
+      - run: go build -ldflags "-X main.version=$VERSION" -race -o entrypoint
+      - run: cp -v ./entrypoint ./workspace
 
       - persist_to_workspace:
           root: workspace

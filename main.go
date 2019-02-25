@@ -11,9 +11,12 @@ import (
 	"syscall"
 )
 
+// will be set va -ldflags
+var version = ""
+
 type tmplCtx struct {
-	EnvVars map[string]string
-	Vars    map[string]interface{}
+	envVars map[string]string
+	vars    map[string]interface{}
 }
 
 func main() {
@@ -24,6 +27,7 @@ func main() {
 	}
 
 	execArgs := os.Args[1:]
+	log.Println("entrypoint version:", version)
 	log.Println("entrypoint arguments:", strings.Join(execArgs, " "))
 
 	cmdPath, err := exec.LookPath(execArgs[0])
@@ -58,7 +62,7 @@ func main() {
 		if matched, _ := regexp.Match(`^{{.*}}$`, []byte(v)); matched {
 			var rendered string
 			if len(vars) > 0 {
-				rendered = newTpl(k, tmplCtx{Vars: vars}).renderStr(v)
+				rendered = newTpl(k, tmplCtx{vars: vars}).renderStr(v)
 			} else {
 				rendered = newTpl(k, nil).renderStr(v)
 			}
@@ -72,8 +76,8 @@ func main() {
 
 	if len(templates) > 0 {
 		ctx := tmplCtx{
-			EnvVars: envVars,
-			Vars:    vars,
+			envVars: envVars,
+			vars:    vars,
 		}
 
 		wg := sync.WaitGroup{}

@@ -31,7 +31,7 @@ const tmplExt string = ".tmpl"
 const s3Prefix string = "s3://"
 
 func init() {
-	r := getRegion()
+	r := getMetadata("region")
 	sess = session.Must(session.NewSession(&aws.Config{Region: aws.String(r)}))
 }
 
@@ -45,25 +45,48 @@ func checkEntrypointVar(v string) bool {
 	return false
 }
 
-func getRegion() string {
-	// use AWS_REGION if set
-	if v := os.Getenv("AWS_REGION"); v != "" {
-		return v
+/*
+most of the same arguments as:
+https://aws.amazon.com/code/ec2-instance-metadata-query-tool/
+*/
+func getMetadata(path string) string {
+	baseURL := "http://169.254.169.254/latest/"
+	client := &http.Client{Timeout: 3 * time.Second}
+
+	var r *http.Response
+	var err error
+
+	switch path {
+	case "ami-id":
+		r, err = client.Get(baseURL + "/meta-data/ami-id/")
+	case "user-data":
+		r, err = client.Get(baseURL + "user-data/")
+	case "instance-id":
+		r, err = client.Get(baseURL + "/meta-data/instance-id/")
+	case "instance-type":
+		r, err = client.Get(baseURL + "/meta-data/instance-type/")
+	case "ami-launch-index":
+		r, err = client.Get(baseURL + "/meta-data/ami-launch-index/")
+	case "availability-zone":
+		r, err = client.Get(baseURL + "/meta-data/placement/availability-zone/")
+	case "region":
+		if v := os.Getenv("AWS_REGION"); v != "" {
+			return v
+		}
+		r, err = client.Get(baseURL + "/meta-data/placement/availability-zone/")
+	default:
+		log.Fatalf("getMetadata: unsupported path %s", path)
 	}
 
-	client := &http.Client{Timeout: 5 * time.Second}
-	r, err := client.Get("http://169.254.169.254/latest/meta-data/placement/availability-zone")
 	if err != nil {
-		log.Fatalf("getRegion: could not connect to ECS metadata: %v\n", err)
+		log.Fatalf("getMetadata: %v\n", err)
 	}
 
 	bs, err := ioutil.ReadAll(r.Body)
-
-	return string(bs[:len(bs)-1])
-}
-
-func stripExt(f string) string {
-	return strings.Replace(f, tmplExt, "", 1)
+	if path == "region" {
+		return string(bs[:len(bs)-1])
+	}
+	return string(bs)
 }
 
 func getSecret(name string) string {
@@ -194,11 +217,10 @@ func newTpl(name string, ctx interface{}) tpl {
 
 	funcMap := map[string]interface{}{
 		"getSecret":      getSecret,
-		"getNumCPU":      runtime.NumCPU,
+		"getNumCpu":      runtime.NumCPU,
 		"getNameServers": getNameServers,
 		"getHostname":    getHostname,
-		"getRegion":      getRegion,
-		"mulf":           func(a, b float64) float64 { return a * b },
+		"getMetadata":    getMetadata,
 	}
 	for k, v := range sprig.FuncMap() {
 		funcMap[k] = v

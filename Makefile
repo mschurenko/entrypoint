@@ -14,7 +14,7 @@ test_container:
 	-e AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" \
 	-e AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" \
 	-e ENTRYPOINT_VARS_FILE="/go/src/entrypoint/fixtures/vars-no-secret.yml" \
-	-e ENTRYPOINT_TEMPLATES="test1.conf.tmpl,test2.conf.tmpl" \
+	-e ENTRYPOINT_TEMPLATES="test1.conf.tmpl" \
 	-w /go/src/entrypoint \
 	golang:latest ./test.sh
 

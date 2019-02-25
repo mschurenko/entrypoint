@@ -1,2 +1,11 @@
 test1 conf
-aws region: {{ getRegion }}
+aws region: {{ getMetadata "region" }}
+{{ range list 0 1 }}
+i: {{ . -}}
+{{ end }}
+
+{{ range $k, $v := dict 0 "foobar"}}
+k: {{ $k }}
+v: {{ $v }}
+{{ end }}
+
