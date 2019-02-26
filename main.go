@@ -47,8 +47,12 @@ func main() {
 			containerVars[k] = v
 		}
 
+		// render any secrets in env vars
 		if matched, _ := regexp.Match(`^{{.*}}$`, []byte(v)); matched {
-			containerVars[k] = newTpl(k).renderStr(v)
+			rv := newTpl(k).renderStr(v)
+			// override env var with secret value
+			os.Setenv(k, rv)
+			containerVars[k] = rv
 		}
 
 		if k == "ENTRYPOINT_TEMPLATES" {
@@ -71,12 +75,12 @@ func main() {
 
 	}
 
-	var containerVarsSlice []string
+	var containerVarsXs []string
 	for k, v := range containerVars {
-		containerVarsSlice = append(containerVarsSlice, k+"="+v)
+		containerVarsXs = append(containerVarsXs, k+"="+v)
 	}
 
-	err = syscall.Exec(cmdPath, execArgs, containerVarsSlice)
+	err = syscall.Exec(cmdPath, execArgs, containerVarsXs)
 	if err != nil {
 		log.Fatal(err)
 	}
