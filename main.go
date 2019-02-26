@@ -30,17 +30,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	envVars := make(map[string]string)
-	for _, i := range os.Environ() {
-		s := strings.Split(i, "=")
-		envVars[s[0]] = s[1]
-	}
-
 	containerVars := make(map[string]string)
 	var templates []string
 
 	// parse ENV vars
-	for k, v := range envVars {
+	for _, i := range os.Environ() {
+		xs := strings.Split(i, "=")
+		k := xs[0]
+		v := xs[1]
+
 		if strings.HasPrefix(k, "ENTRYPOINT_") {
 			if !checkEntrypointVar(k) {
 				log.Fatalf("Error: %v is not one of %v", k, entrypointEnvVars)
