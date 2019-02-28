@@ -12,7 +12,6 @@ http://masterminds.github.io/sprig/
 ## Special Environment Variales
 The following environment variables are specfic to `entrypoint` and will not be passed into your container:
 ```
-ENTRYPOINT_VARS
 ENTRYPOINT_TEMPLATES
 ENTRYPOINT_TMPL_OPTION
 ```
