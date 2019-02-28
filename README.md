@@ -4,11 +4,6 @@
 
 docker entrypoint that renders go templates
 
-## Templating files
-
-## Templating Environment Variables
-Note that `EnvVars` will not be passed into a template context when using `renderStr`
-
 
 ## Template Functions
 http://masterminds.github.io/sprig/
