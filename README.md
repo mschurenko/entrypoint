@@ -18,10 +18,8 @@ ENTRYPOINT_TMPL_OPTION
 ```
 
 
-## Example
-# `Dockerfile`
+## Add this to your Dockerfile(s)
 ```dockerfile
-...
 # entrypoint
 RUN curl -L https://github.com/mschurenko/entrypoint/releases/download/0.1.11/entrypoint \
   -o /entrypoint && chmod +x /entrypoint
