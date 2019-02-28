@@ -24,7 +24,7 @@ RUN curl -L https://github.com/mschurenko/entrypoint/releases/download/0.1.11/en
 
 # templates
 WORKDIR /conf
-COPY tmpl1.conf.tmpl .
+COPY my_app.conf.tmpl .
 
 ENTRYPOINT ["/entrypoint"]
 ```
@@ -32,7 +32,7 @@ ENTRYPOINT ["/entrypoint"]
 ## Run your docker container
 ```sh
 docker run \
--e ENTRYPOINT_TEMPLATES="/conf/tmpl1.conf.tmpl" \
+-e ENTRYPOINT_TEMPLATES="/conf/my_app.conf.tmpl" \
 my_image:latest \
-my_app /conf/tmpl1.conf
+my_app /conf/my_app.conf
 ```
