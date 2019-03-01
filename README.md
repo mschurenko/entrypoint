@@ -10,6 +10,7 @@ http://masterminds.github.io/sprig/
 
 
 `secret` get a secret from AWS Secrets Manager
+
 Example:
 ```
 secret "my_secret"
@@ -22,6 +23,7 @@ secret "my_secret"
 `hostname` get the hostname of the container/host
 
 `ec2Metadata` fetch EC2 meatada info
+
 Example:
 ```
 ec2Metadata "availability-zone"
