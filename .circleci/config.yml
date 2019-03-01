@@ -19,8 +19,9 @@ jobs:
     steps:
       - checkout
       - run: mkdir ./workspace
-      - run: go test -v .
-        no_output_timeout: 1200
+      - run: 
+          command: go test -v .
+          no_output_timeout: 1200
       - run: go build -ldflags "-X main.version=$VERSION" -race -o entrypoint
       - run: cp -v ./entrypoint ./workspace
 
