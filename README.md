@@ -9,6 +9,26 @@ docker entrypoint that renders go templates
 http://masterminds.github.io/sprig/
 
 
+`secret` get a secret from AWS Secrets Manager
+Example:
+```
+secret "my_secret"
+```
+
+`numCPU` return the number of CPU cores on the host
+
+`nameServers` return a list of nameservers from the container/host
+
+`hostname` get the hostname of the container/host
+
+`ec2Metadata` fetch EC2 meatada info
+Example:
+```
+ec2Metadata "availability-zone"
+```
+
+
+
 ## Special Environment Variales
 The following environment variables are specfic to `entrypoint` and will not be passed into your container:
 ```
